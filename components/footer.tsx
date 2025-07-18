@@ -4,14 +4,6 @@ import Link from 'next/link'
 import { useState } from 'react'
 
 export default function Footer() {
-  const [email, setEmail] = useState('')
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    // Aquí puedes agregar la lógica para el newsletter
-    console.log('Email suscrito:', email)
-    setEmail('')
-  }
 
   const navigationLinks = [
     { name: 'Inicio', href: '#home' },

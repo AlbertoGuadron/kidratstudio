@@ -40,7 +40,20 @@ const KidRatStudioBanner = () => {
   const [gameScore, setGameScore] = useState<number>(0);
   const [comboMultiplier, setComboMultiplier] = useState<number>(1);
   const [pixelGrid, setPixelGrid] = useState<Pixel[]>([]);
+  const [isMobile, setIsMobile] = useState<boolean>(false);
   const bannerRef = useRef<HTMLDivElement>(null);
+
+  // Detectar si es móvil después del primer render
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Generar partículas estilo 8-bit
   useEffect(() => {
@@ -189,7 +202,7 @@ const KidRatStudioBanner = () => {
       ref={bannerRef}
       className="relative overflow-hidden bg-black border-4 border-gray-800 rounded-xl shadow-2xl cursor-crosshair select-none transition-all duration-300 mt-32"
       style={{ 
-        height: window.innerWidth < 768 ? '250px' : '350px',
+        height: isMobile ? '250px' : '350px',
         backgroundColor: isHovered ? '#0a0a0a' : '#000000',
         borderColor: isHovered ? '#ffffff' : '#4f4f4f',
         boxShadow: isHovered 
@@ -319,8 +332,8 @@ const KidRatStudioBanner = () => {
               className="inline-block transition-all duration-200"
               style={{
                 transform: isHovered 
-                  ? `translateY(${Math.sin(Date.now() * 0.006 + index * 0.5) * (window.innerWidth < 768 ? 8 : 15)}px) 
-                     translateX(${Math.cos(Date.now() * 0.004 + index * 0.3) * (window.innerWidth < 768 ? 2 : 5)}px)
+                  ? `translateY(${Math.sin(Date.now() * 0.006 + index * 0.5) * (isMobile ? 8 : 15)}px) 
+                     translateX(${Math.cos(Date.now() * 0.004 + index * 0.3) * (isMobile ? 2 : 5)}px)
                      rotate(${Math.sin(Date.now() * 0.005 + index) * 3}deg)` 
                   : 'none',
                 color: powerLevel > 75 && index % 2 === 0 ? '#ffffff' : '#ffffff',
@@ -384,8 +397,13 @@ const KidRatStudioBanner = () => {
       </div>
 
       {/* Indicador gaming */}
-      <div className="absolute bottom-3 right-3 font-mono text-xs text-gray-400">
-        {isHovered ? '[GAMING MODE ACTIVE]' : '[CLICK TO PLAY]'}
+      <div className="absolute bottom-2 right-2 sm:bottom-3 sm:right-3 font-mono text-xs text-gray-400">
+        <span className="hidden sm:inline">
+          {isHovered ? '[GAMING MODE ACTIVE]' : '[CLICK TO PLAY]'}
+        </span>
+        <span className="sm:hidden">
+          {isHovered ? '[ACTIVE]' : '[TAP]'}
+        </span>
       </div>
 
       {/* Cursor personalizado */}
