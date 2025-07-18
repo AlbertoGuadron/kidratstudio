@@ -1,14 +1,51 @@
 @import "tailwindcss";
 
+/* Configuración de fuentes */
+@font-face {
+  font-family: 'ANTARIS CF';
+  src: url('/fonts/antaris-cf-regular.woff2') format('woff2'),
+       url('/fonts/antaris-cf-regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'ANTARIS CF';
+  src: url('/fonts/antaris-cf-medium.woff2') format('woff2'),
+       url('/fonts/antaris-cf-medium.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'ANTARIS CF';
+  src: url('/fonts/antaris-cf-bold.woff2') format('woff2'),
+       url('/fonts/antaris-cf-bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+   /* Colores de tu marca */
+  --brand-orange: #e37403;
+  --brand-black: #000000;
+  --brand-white: #ffffff;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+    /* Configurar ANTARIS CF como fuente principal */
+  --font-sans: 'ANTARIS CF', ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
 }
 
@@ -22,5 +59,5 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'ANTARIS CF', Arial, Helvetica, sans-serif
 }
