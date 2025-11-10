@@ -1,4 +1,3 @@
-// components/game.tsx
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
@@ -6,7 +5,10 @@ import { useEffect, useRef, useState } from 'react'
 export default function Game() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const rafRef = useRef<number | null>(null)
-  const [playing, setPlaying] = useState(true)
+
+  const [playing, setPlaying] = useState(false)
+  const [gameOver, setGameOver] = useState(false)
+  const [score, setScore] = useState(0)
 
   const W = 320
   const H = 180
@@ -14,43 +16,49 @@ export default function Game() {
   const G = 700
   const JUMP = -280
 
-  const mouse = { x: 48, y: H - 40, w: 22, h: 16, vy: 0, onGround: true }
-  let tLast = 0
-  let worldX = 0
+  // Usar useRef para mantener el estado del juego entre renders
+  const gameStateRef = useRef({
+    mouse: { x: 48, y: H - 40, w: 22, h: 16, vy: 0, onGround: true },
+    worldX: 0,
+    objects: [] as Array<{
+      x: number
+      y: number
+      w: number
+      h: number
+      type: 'cheese' | 'cat'
+      born: number
+      taken?: boolean
+    }>,
+    tLast: 0,
+    score: 0
+  })
 
-  type Obj = {
-    x: number
-    y: number
-    w: number
-    h: number
-    type: 'cheese' | 'cat'
-    born: number
-    taken?: boolean
-  }
-  let objects: Obj[] = []
-
-  function reset() {
-    setPlaying(true)
-    worldX = 0
-    mouse.x = 48
-    mouse.y = H - 40
-    mouse.vy = 0
-    mouse.onGround = true
-    objects = []
-    const now = performance.now()
-    // objetos iniciales
-    for (let i = 1; i <= 3; i++) {
-      objects.push({
-        x: 180 + i * 90,
-        y: H - 52 - (i % 2 ? 0 : 18),
-        w: 12,
-        h: 10,
-        type: 'cheese',
-        born: now,
-      })
+  const reset = () => {
+    setPlaying(false)
+    setGameOver(false)
+    setScore(0)
+    gameStateRef.current.worldX = 0
+    gameStateRef.current.score = 0
+    gameStateRef.current.mouse = { 
+      x: 48, 
+      y: H - 40, 
+      w: 22, 
+      h: 16, 
+      vy: 0, 
+      onGround: true 
     }
-    objects.push({ x: 420, y: H - 44, w: 20, h: 16, type: 'cat', born: now })
-    tLast = 0
+    const now = performance.now()
+    gameStateRef.current.objects = [
+      { x: 220, y: H - 52, w: 12, h: 10, type: 'cheese', born: now },
+      { x: 420, y: H - 44, w: 20, h: 16, type: 'cat', born: now },
+    ]
+    gameStateRef.current.tLast = 0
+  }
+
+  const startGame = () => {
+    setPlaying(true)
+    setGameOver(false)
+    gameStateRef.current.tLast = 0
   }
 
   // Entradas
@@ -59,41 +67,46 @@ export default function Game() {
       const k = e.key.toLowerCase()
       if (k === ' ' || k === 'arrowup' || k === 'w') {
         e.preventDefault()
-        if (playing) {
-          if (mouse.onGround) {
-            mouse.vy = JUMP
-            mouse.onGround = false
-          }
-        } else reset()
+        if (!playing && !gameOver) {
+          startGame()
+        } else if (playing && gameStateRef.current.mouse.onGround) {
+          gameStateRef.current.mouse.vy = JUMP
+          gameStateRef.current.mouse.onGround = false
+        } else if (gameOver) {
+          reset()
+        }
       }
     }
     const onClick = () => {
-      if (playing) {
-        if (mouse.onGround) {
-          mouse.vy = JUMP
-          mouse.onGround = false
-        }
-      } else reset()
+      if (!playing && !gameOver) {
+        startGame()
+      } else if (playing && gameStateRef.current.mouse.onGround) {
+        gameStateRef.current.mouse.vy = JUMP
+        gameStateRef.current.mouse.onGround = false
+      } else if (gameOver) {
+        reset()
+      }
     }
+
     window.addEventListener('keydown', onKey)
     window.addEventListener('pointerdown', onClick)
     return () => {
       window.removeEventListener('keydown', onKey)
       window.removeEventListener('pointerdown', onClick)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playing])
+  }, [playing, gameOver])
 
   // Loop principal
   useEffect(() => {
     const ctx = canvasRef.current?.getContext('2d')
     if (!ctx) return
     reset()
+
     let running = true
     const step = (t: number) => {
       if (!running) return
-      const dt = Math.min(0.032, (t - tLast) / 1000 || 0.016)
-      tLast = t
+      const dt = Math.min(0.032, (t - gameStateRef.current.tLast) / 1000 || 0.016)
+      gameStateRef.current.tLast = t
       tick(ctx, dt, t)
       rafRef.current = requestAnimationFrame(step)
     }
@@ -102,17 +115,36 @@ export default function Game() {
       running = false
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Actualizar tick para usar playingRef y gameOverRef
+  useEffect(() => {
+    const ctx = canvasRef.current?.getContext('2d')
+    if (!ctx) return
+
+    const step = (t: number) => {
+      const dt = Math.min(0.032, (t - gameStateRef.current.tLast) / 1000 || 0.016)
+      gameStateRef.current.tLast = t
+      tick(ctx, dt, t)
+      rafRef.current = requestAnimationFrame(step)
+    }
+    
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current)
+    }
+    rafRef.current = requestAnimationFrame(step)
+  }, [playing, gameOver])
+
   function tick(ctx: CanvasRenderingContext2D, dt: number, time: number) {
+    const { mouse, objects } = gameStateRef.current
+
     if (!playing) {
-      draw(ctx, true, time)
+      draw(ctx, false, time)
       return
     }
 
-    // Mundo y física
-    worldX += speed * dt
+    // Movimiento del mundo
+    gameStateRef.current.worldX += speed * dt
     mouse.vy += G * dt
     mouse.y += mouse.vy * dt
     const groundY = H - 40
@@ -126,11 +158,11 @@ export default function Game() {
     objects.forEach((o) => (o.x -= speed * dt))
 
     // Nuevos objetos
-    const far = worldX + W + 100
+    const far = gameStateRef.current.worldX + W + 100
     const lastX = objects.length ? Math.max(...objects.map((o) => o.x)) : 0
     if (lastX < far) {
       const gap = 80 + Math.random() * 120
-      const x = (lastX || worldX + W) + gap
+      const x = (lastX || gameStateRef.current.worldX + W) + gap
       const now = time
       if (Math.random() < 0.6) {
         const levels = [H - 52, H - 68, H - 84]
@@ -145,26 +177,33 @@ export default function Game() {
     for (const o of objects) {
       if (o.taken) continue
       if (overlap(mouse, o)) {
-        if (o.type === 'cheese') o.taken = true
-        else if (o.type === 'cat') {
+        if (o.type === 'cheese') {
+          o.taken = true
+          gameStateRef.current.score += 1
+          setScore(gameStateRef.current.score)
+        } else if (o.type === 'cat') {
+          // Game Over
           setPlaying(false)
+          setGameOver(true)
+          mouse.vy = 0
+          mouse.y = groundY
+          mouse.onGround = true
           break
         }
       }
     }
-    // Limpiar objetos viejos
-    objects = objects.filter((o) => o.x > -40 && !o.taken)
-
-    draw(ctx, false, time)
+    gameStateRef.current.objects = objects.filter((o) => o.x > -40 && !o.taken)
+    draw(ctx, true, time)
   }
 
-  function overlap(a: { x: number; y: number; w: number; h: number }, b: Obj) {
+  function overlap(a: { x: number; y: number; w: number; h: number }, b: { x: number; y: number; w: number; h: number; taken?: boolean }) {
     return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y
   }
 
-  // --- Dibujo ---
-  function draw(ctx: CanvasRenderingContext2D, frozen: boolean, time: number) {
-    // Fondo
+  // Dibujo principal
+  function draw(ctx: CanvasRenderingContext2D, animate: boolean, time: number) {
+    const { mouse, objects } = gameStateRef.current
+    
     ctx.clearRect(0, 0, W, H)
     const g = ctx.createLinearGradient(0, 0, 0, H)
     g.addColorStop(0, '#0b0b0b')
@@ -172,40 +211,56 @@ export default function Game() {
     ctx.fillStyle = g
     ctx.fillRect(0, 0, W, H)
 
-    // Suelo
     ctx.fillStyle = 'rgba(255,255,255,0.06)'
     ctx.fillRect(0, H - 24, W, 2)
 
-    // Objetos
     for (const o of objects) {
       if (o.type === 'cheese') drawCheese(ctx, o, time)
       else drawCat(ctx, o.x, o.y, o.w, o.h)
     }
 
-    // Ratón
-    drawMouse(ctx, mouse.x, mouse.y, mouse.w, mouse.h, !mouse.onGround && !frozen)
+    drawMouse(ctx, mouse.x, mouse.y, mouse.w, mouse.h, animate && !mouse.onGround)
 
-    // Overlay
-    if (!playing) {
+    // Mensajes
+    if (!playing && !gameOver) {
       ctx.fillStyle = 'rgba(0,0,0,0.55)'
       ctx.fillRect(0, 0, W, H)
       ctx.fillStyle = '#fff'
-      ctx.font = 'bold 16px ui-monospace, Menlo, monospace'
-      ctx.fillText('¡Ups! El gato te alcanzó', 64, 84)
-      ctx.font = '12px ui-monospace, Menlo, monospace'
-      ctx.fillText('Pulsa ↑/Espacio o toca para reiniciar', 58, 104)
+      ctx.font = 'bold 16px monospace'
+      ctx.textAlign = 'center'
+      ctx.fillText('Presiona Iniciar para jugar', W / 2, H / 2)
+      ctx.textAlign = 'left'
+    }
+
+    if (gameOver) {
+      ctx.fillStyle = 'rgba(0,0,0,0.55)'
+      ctx.fillRect(0, 0, W, H)
+      ctx.fillStyle = '#fff'
+      ctx.font = 'bold 16px monospace'
+      ctx.textAlign = 'center'
+      ctx.fillText('¡Ups! El gato te alcanzó', W / 2, H / 2 - 10)
+      ctx.font = '12px monospace'
+      ctx.fillText(`Quesos atrapados: ${score}`, W / 2, H / 2 + 10)
+      ctx.fillText('Pulsa Reiniciar para intentar de nuevo', W / 2, H / 2 + 28)
+      ctx.textAlign = 'left'
+    }
+
+    // Score durante el juego
+    if (playing) {
+      ctx.fillStyle = 'rgba(0,0,0,0.6)'
+      ctx.fillRect(8, 8, 80, 24)
+      ctx.fillStyle = '#facc15'
+      ctx.font = 'bold 14px monospace'
+      ctx.fillText(`🧀 ${gameStateRef.current.score}`, 16, 25)
     }
   }
 
-  // --- Dibujos individuales ---
+  // Dibujos individuales
   function drawMouse(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, jumping: boolean) {
     ctx.fillStyle = '#ffffff'
     roundRect(ctx, x, y, w, h, 4, true)
-    ctx.fillStyle = '#ffffff'
     ctx.beginPath()
     ctx.arc(x + 5, y - 2, 4, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.beginPath()
     ctx.arc(x + 12, y - 3, 3.2, 0, Math.PI * 2)
     ctx.fill()
     ctx.fillStyle = '#0b0b0b'
@@ -222,7 +277,7 @@ export default function Game() {
     ctx.stroke()
   }
 
-  function drawCheese(ctx: CanvasRenderingContext2D, o: Obj, time: number) {
+  function drawCheese(ctx: CanvasRenderingContext2D, o: { x: number; y: number; w: number; h: number; born: number }, time: number) {
     const pulse = 0.6 + Math.abs(Math.sin((time - o.born) / 300)) * 0.4
     ctx.fillStyle = `rgba(250,204,21,${pulse})`
     ctx.beginPath()
@@ -231,28 +286,45 @@ export default function Game() {
     ctx.lineTo(o.x + o.w * 0.6, o.y)
     ctx.closePath()
     ctx.fill()
-    ctx.fillStyle = `rgba(255,255,255,${pulse * 0.4})`
-    ctx.beginPath()
-    ctx.arc(o.x + o.w * 0.6 - 3, o.y + o.h * 0.55, 1.5, 0, Math.PI * 2)
-    ctx.fill()
   }
 
   function drawCat(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
     ctx.fillStyle = '#e5e7eb'
     roundRect(ctx, x, y, w, h, 3, true)
+    
+    // Orejas triangulares
     ctx.fillStyle = '#e5e7eb'
     ctx.beginPath()
     ctx.moveTo(x + 3, y)
-    ctx.lineTo(x + 7, y - 5)
-    ctx.lineTo(x + 6, y)
+    ctx.lineTo(x + 6, y - 4)
+    ctx.lineTo(x + 9, y)
     ctx.closePath()
     ctx.fill()
+    
     ctx.beginPath()
-    ctx.moveTo(x + w - 3, y)
-    ctx.lineTo(x + w - 7, y - 5)
-    ctx.lineTo(x + w - 6, y)
+    ctx.moveTo(x + w - 9, y)
+    ctx.lineTo(x + w - 6, y - 4)
+    ctx.lineTo(x + w - 3, y)
     ctx.closePath()
     ctx.fill()
+    
+    // Interior de las orejas (rosa)
+    ctx.fillStyle = '#fca5a5'
+    ctx.beginPath()
+    ctx.moveTo(x + 4.5, y - 0.5)
+    ctx.lineTo(x + 6, y - 3)
+    ctx.lineTo(x + 7.5, y - 0.5)
+    ctx.closePath()
+    ctx.fill()
+    
+    ctx.beginPath()
+    ctx.moveTo(x + w - 7.5, y - 0.5)
+    ctx.lineTo(x + w - 6, y - 3)
+    ctx.lineTo(x + w - 4.5, y - 0.5)
+    ctx.closePath()
+    ctx.fill()
+    
+    // Ojos
     ctx.fillStyle = '#0b0b0b'
     ctx.fillRect(x + 6, y + 5, 2, 2)
     ctx.fillRect(x + w - 10, y + 5, 2, 2)
@@ -293,7 +365,7 @@ export default function Game() {
           <p className="text-xs tracking-widest text-gray-400">DEMO INTERACTIVA</p>
           <h2 className="text-xl md:text-2xl font-black leading-tight mt-1">Kid Rat Sprint</h2>
           <p className="text-gray-300 text-sm md:text-base mt-2">
-            Una micro-demo visual y divertida. Haz clic o pulsa{' '}
+            Mini-demo visual y divertida. Haz clic o pulsa{' '}
             <span className="font-semibold text-white">Espacio/↑</span> para saltar. Atrapa el queso brillante y evita
             al gato.
           </p>
@@ -301,15 +373,22 @@ export default function Game() {
 
         <div className="mx-auto max-w-[400px]">
           <div className="rounded-2xl border border-white/15 bg-white/5 backdrop-blur-md p-3 shadow-[0_0_0_1px_rgba(255,255,255,0.05)]">
-            <div className="flex items-center justify-end">
+            <div className="flex items-center justify-between">
               <button
                 onClick={reset}
-                className="px-3 py-1 rounded-full bg-orange-500 text-white hover:bg-orange-600 text-xs font-semibold"
+                className="px-3 py-1 rounded-full bg-gray-700 text-white hover:bg-gray-600 text-xs font-semibold"
               >
                 Reiniciar
               </button>
+              <button
+                onClick={startGame}
+                className="px-3 py-1 rounded-full bg-orange-500 text-white hover:bg-orange-600 text-xs font-semibold"
+              >
+                Iniciar
+              </button>
             </div>
-            <div className="rounded-xl overflow-hidden border border-white/10 bg-black">
+
+            <div className="rounded-xl overflow-hidden border border-white/10 bg-black mt-2">
               <canvas
                 ref={canvasRef}
                 width={W}
@@ -325,7 +404,7 @@ export default function Game() {
           </div>
 
           <p className="mt-3 text-center text-gray-400 text-xs">
-            Podemos personalizar colores, sprites y animaciones para tu marca o campañas.
+            Podemos personalizar sprites, colores y animaciones para tu marca o campañas.
           </p>
         </div>
       </div>
