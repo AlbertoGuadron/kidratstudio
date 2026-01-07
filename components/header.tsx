@@ -18,9 +18,7 @@ export default function Header() {
 
   const navItems = [
     { name: 'Inicio', href: '#home' },
-    { name: 'Servicios', href: '#services' },
-    { name: 'Sobre Nosotros', href: '#about' },
-    { name: 'Contacto', href: '#contact' }
+    { name: 'Servicios', href: '#services' }
   ]
 
   return (
@@ -82,21 +80,31 @@ export default function Header() {
           {/* CTA Button */}
           <div className="hidden md:block">
             <Link
-              href="#contact"
-              className="relative inline-flex items-center px-6 py-3 bg-orange-500 text-white font-semibold rounded-full hover:bg-orange-600 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-orange-500/25 group overflow-hidden"
+              href="https://api.whatsapp.com/send?phone=50370078935&text=¡Hola!%20Me%20gustaría%20solicitar%20una%20cotización%20con%20Kid%20Rat%20Studio."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="relative inline-flex items-center px-6 py-3 bg-green-500 text-white font-semibold rounded-full hover:bg-green-600 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-green-500/25 group overflow-hidden"
             >
-              <span className="relative z-10">Comenzar</span>
-              <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-orange-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <svg 
-                className="w-4 h-4 ml-2 transition-transform duration-300 group-hover:translate-x-1" 
-                fill="none" 
-                stroke="currentColor" 
+              <span className="relative z-10">Contactanos</span>
+
+              <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+              <svg
+                className="w-4 h-4 ml-2 transition-transform duration-300 group-hover:translate-x-1"
+                fill="none"
+                stroke="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 8l4 4m0 0l-4 4m4-4H3"
+                />
               </svg>
             </Link>
           </div>
+
 
           {/* Mobile menu button */}
           <button
