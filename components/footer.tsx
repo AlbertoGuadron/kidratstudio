@@ -10,7 +10,7 @@ export default function Footer() {
     { name: 'Servicios', href: '#services' }
   ]
 
-  const socialLinks = [
+ {/*  const socialLinks = [
     { 
       name: 'Instagram', 
       href: '#', 
@@ -47,7 +47,7 @@ export default function Footer() {
         </svg>
       )
     }
-  ]
+  ] */}
 
   return (
     <footer className="bg-black text-white relative overflow-hidden">
