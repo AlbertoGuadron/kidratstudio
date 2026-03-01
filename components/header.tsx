@@ -80,7 +80,7 @@ export default function Header() {
           {/* CTA Button */}
           <div className="hidden md:block">
             <Link
-              href="https://api.whatsapp.com/send?phone=50370078935&text=¡Hola!%20Me%20gustaría%20solicitar%20una%20cotización%20con%20Kid%20Rat%20Studio."
+              href="https://api.whatsapp.com/send?phone=50372319551&text=¡Hola!%20Me%20gustaría%20solicitar%20una%20cotización%20con%20Kid%20Rat%20Studio."
               target="_blank"
               rel="noopener noreferrer"
               className="relative inline-flex items-center px-6 py-3 bg-green-500 text-white font-semibold rounded-full hover:bg-green-600 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-green-500/25 group overflow-hidden"
